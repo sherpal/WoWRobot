@@ -1,0 +1,13 @@
+logs
+target
+/.metals
+/.bloop
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+/RUNNING_PID
+project/metals.sbt
+invites
+.bsp

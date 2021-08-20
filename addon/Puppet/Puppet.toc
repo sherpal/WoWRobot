@@ -1,0 +1,11 @@
+## Interface: 20501
+
+## Title: Puppet
+
+## Author: sherpal
+## Version: v1.0
+
+Puppet.lua
+Collection.lua
+Core.lua
+Test.lua
