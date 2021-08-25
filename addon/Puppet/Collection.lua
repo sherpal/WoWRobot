@@ -2,7 +2,19 @@
 local collection = {}
 
 collection.mt = {}
-collection.mt.__index = collection.mt
+collection.mt.__index = function (col, key)
+  if type(key) == "number" then
+    return col.values[key]
+  else
+    return collection.mt[key]
+  end
+end
+
+function collection.mt:toJson()
+  return self:map(Puppet.JsonSerializer.toJson):mkString("[", ",", "]")
+end
+
+Puppet.JsonSerializer.inherit(collection.mt)
 
 collection.mt.__eq = function(left, right)
   return left:length() == right:length() and left:zip(right):forall(function(pair)
@@ -17,7 +29,13 @@ function collection.mt:length()
   return #self.values
 end
 
-function collection.mt:foldLeft(f, initial)
+-- Returns true if at least one element satisfy the predicate
+-- false for empty collection
+function collection.mt:exists(predicate)
+  return self:foldLeft(false, function (acc, elem) return acc or predicate(elem) end)
+end
+
+function collection.mt:foldLeft(initial, f)
   local result = initial
   self:foreach(function(element)
     result = f(result, element)
@@ -28,7 +46,7 @@ end
 -- Returns whether all elements in the collection satisfy the predicate
 -- true for empty collection
 function collection.mt:forall(predicate)
-  return self:foldLeft(function(acc, elem) return acc and predicate(elem) end, true)
+  return self:foldLeft(true, function(acc, elem) return acc and predicate(elem) end)
 end
 
 -- Applies the effectfull function f to each element of the collection
@@ -43,6 +61,22 @@ function collection.mt:map(f)
   local result = {}
   self:foreach(function(elem) result[#result+1] = f(elem) end)
   return collection.new(result)
+end
+
+function collection.mt:mkString(before, sperator, after)
+  if type(before) == "nil" then
+    return self:mkString("")
+  end
+
+  if type(sperator) == "nil" and type(after) == "nil" then
+    return self:mkString("", before, "")
+  end
+
+  if type(after) == "nil" then
+    error("mkString takes one or three arguments, not two.")
+  end
+
+  return before .. table.concat(self.values, sperator) .. after
 end
 
 -- Maps each element of the collection via f, flattening the result
@@ -64,12 +98,12 @@ function collection.mt:filter(predicate)
   end)
 end
 
+function collection.mt:sum(zero)
+  return self:foldLeft(zero or 0, function(left, right) return left + right end)
+end
+
 function collection.mt:toString()
-  local result = ""
-  self:foreach(function(elem)
-    result = result .. elem .. ", "
-  end)
-  return result:sub(1, #result - 2)
+  return self:mkString(", ")
 end
 
 -- Fills the collection with the padding element, until it reaches desired length
@@ -116,7 +150,7 @@ end
 function collection.range(from, to)
   return collection.empty:padTo(0, to):indices():filter(function(index)
     return index >= from
-  end)  
+  end)
 end
 
 function collection.new(elements)
