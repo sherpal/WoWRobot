@@ -3,6 +3,7 @@
 local collection = Puppet.collection
 local json = Puppet.JsonSerializer
 local base64 = Puppet.base64
+local identity = Puppet.identity
 
 local function pack(...)
   return { n = select("#", ...), ... }
@@ -49,7 +50,7 @@ local function test(description, effect)
   return t
 end
 
-local _1234 = collection.new({1, 2, 3, 4})
+local _1234 = collection.range(1, 4)
 
 suite("Collection API",
   test("Collection instances are serializable", function ()
@@ -110,6 +111,22 @@ suite("Collection API",
         j * (j + 1) / 2 + j
       )
     end
+  end),
+
+  test("Grouped method", function()
+    local elements = collection.range(1, 1000)
+
+    assertEquals(elements:grouped(10):length(), 100)
+    assert(elements:grouped(10):forall(function(group) return group:length() == 10 end))
+    assertEquals(elements:grouped(501):length(), 2)
+    assertEquals(elements:grouped(501)[1]:length(), 501)
+    assertEquals(elements:grouped(501)[2]:length(), 499)
+
+    assertEquals(
+      elements:grouped(11):flatten(),
+      identity(elements),
+      "grouped then flatten should be identity function"
+    )
   end)
 )
 
@@ -164,6 +181,20 @@ suite("Json Serialization",
       json.toJson(element),
       "{\"hello\":3,\"elements\":[3,true,false,\"hi\"]}"
     )
+  end),
+
+  test("Auto encoding with nested and collection", function ()
+    local element = json.makeJsonSerializableAuto({
+      hello = 3,
+      elements = collection.range(1, 3),
+      noThere = function() end,
+      nested = {
+        hey = 4
+      }
+    })
+
+    assertEquals(element:keysToJsonEncode():length(), 3)
+    assertEquals(element.nested:keysToJsonEncode():length(), 1)
   end)
 )
 
@@ -204,3 +235,11 @@ suite("base64",
 
 -- Runs all test suites
 collection.new(allSuites):foreach(function(s) s:run() end)
+
+
+print(collection.charsFromString(base64.encode("abcdz@#&é'(à")):map(
+  function(c) return (c == "=") and -1 or base64.bytes:find(c) - 1 end
+))
+
+print(base64.encode("abcdz@#&é'(à"))
+

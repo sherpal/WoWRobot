@@ -83,12 +83,18 @@ end
 -- f must return a collection
 function collection.mt:flatMap(f)
   local result = {}
+  local j = 0
   self:foreach(function(elem)
     f(elem):foreach(function(elemToAdd)
-      result[#result+1] = elemToAdd
+      j = j + 1
+      result[j] = elemToAdd
     end)
   end)
   return collection.new(result)
+end
+
+function collection.mt:flatten()
+  return self:flatMap(Puppet.identity)
 end
 
 -- Returns only the element satisfying the predicate
@@ -96,6 +102,29 @@ function collection.mt:filter(predicate)
   return self:flatMap(function(x)
     return predicate(x) and collection.single(x) or collection.empty
   end)
+end
+
+-- Groups the elements in the collection by groupSize
+-- The first element of the returned collection contains the groupSize first element of
+-- this collection. The last group is truncated if need be.
+function collection.mt:grouped(groupSize)
+  if groupSize <= 0 then error("Group size must be positive", 2) end
+  -- we do this like that because it seems more optimized.
+  local groups = {}
+  local groupId = 1
+  local currentlyInGroup = 0
+  self:foreach(function(element)
+    if currentlyInGroup >= groupSize then
+      currentlyInGroup = 0
+      groupId = groupId + 1
+    end
+    currentlyInGroup = currentlyInGroup + 1
+
+    groups[groupId] = groups[groupId] or {}
+    groups[groupId][currentlyInGroup] = element
+  end)
+
+  return collection.new(groups):map(collection.new)
 end
 
 function collection.mt:sum(zero)
@@ -164,6 +193,15 @@ collection.empty = collection.new({})
 
 function collection.single(x)
   return collection.new({x})
+end
+
+function collection.charsFromString(str)
+  local chars = {}
+  local length = #str
+  for j = 1, length do
+    chars[j] = str:sub(j, j)
+  end
+  return collection.new(chars)
 end
 
 Puppet.collection = collection

@@ -1,5 +1,6 @@
 print("Welcome, puppet!")
 
+local WorldFrame = Puppet.WorldFrame
 local collection = Puppet.collection
 
 local function createSquares(pixelSize, howMany)
@@ -27,5 +28,20 @@ end
 local squares = createSquares(10, 100)
 
 print(squares:length())
+
+function Puppet.encodeLife()
+  local mana = UnitPower("player", UnitPowerType("player"))
+
+  local gameState = Puppet.JsonSerializer.makeJsonSerializable({
+    mana = mana
+  }, Puppet.collection.single("mana"))
+
+  print(gameState:toJson())
+
+  Puppet.GameStateDrawing.drawState(squares, gameState)
+  
+end
+
+
 
 

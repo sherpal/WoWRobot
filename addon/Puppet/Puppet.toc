@@ -8,5 +8,7 @@
 Puppet.lua
 Utils.lua
 Collection.lua
+Scheduler.lua
+GameStateDrawing.lua
 Core.lua
 Test.lua

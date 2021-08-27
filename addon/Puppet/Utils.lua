@@ -31,6 +31,16 @@ function serializer.makeJsonSerializable(element, fields)
   return element
 end
 
+function serializer.makeJsonSerializableAuto(element)
+  local fields = {}
+  for k, v in pairs(element) do
+    if type(v) ~= "function" then fields[#fields+1] = k end
+    if type(v) == "table" and (not v.isSerializable) then serializer.makeJsonSerializableAuto(v) end
+  end
+
+  return serializer.makeJsonSerializable(element, Puppet.collection.new(fields))
+end
+
 serializer.mt.isSerializable = true
 
 -- The default implementation of the json encoding requires that the element
@@ -48,6 +58,12 @@ function serializer.mt:toJson()
   return keys:map(function (key)
     return "\"" .. key .. "\":" .. serializer.toJson(self[key])
   end):mkString("{", ",", "}")
+end
+
+-- Dumps the element into a JSON string, using the automatic serializer
+-- if the element is not an instance of Serializable
+function serializer.toJsonAuto(element)
+  return element.isSerializable and element:toJson() or serializer.makeJsonSerializableAuto(element):toJson()
 end
 
 -- Convert the given element to a json string
@@ -69,6 +85,8 @@ local base64 = {}
 -- character table string
 local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
+base64.bytes = b
+
 -- encoding
 function base64.encode(data)
     return ((data:gsub('.', function(x) 
@@ -81,6 +99,12 @@ function base64.encode(data)
         for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
         return b:sub(c+1,c+1)
     end)..({ '', '==', '=' })[#data%3+1])
+end
+
+function base64.encodeToNumber(data)
+  return Puppet.collection.charsFromString(base64.encode(data)):map(function(char)
+    return char == "=" and nil or b:find(char) - 1
+  end):filter(function(elem) return elem and true or false end)
 end
 
 -- decoding
@@ -105,3 +129,4 @@ end
 -- exports
 Puppet.JsonSerializer = serializer
 Puppet.base64 = base64
+Puppet.identity = function(x) return x end
