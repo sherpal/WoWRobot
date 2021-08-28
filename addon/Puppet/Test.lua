@@ -4,6 +4,7 @@ local collection = Puppet.collection
 local json = Puppet.JsonSerializer
 local base64 = Puppet.base64
 local identity = Puppet.identity
+local LIO = Puppet.LIO
 
 local function pack(...)
   return { n = select("#", ...), ... }
@@ -19,9 +20,10 @@ local function suite(name, ...)
     tests[#tests+1] = rawTests[j]
   end
 
-  local s = {}
-  s.tests = collection.new(tests)
-  s.name = name
+  local s = {
+    tests = collection.new(tests),
+    name = name
+  }
   function s:run()
     print("Test suite " .. self.name)
     self.tests:foreach(function(t) t.effect() end)
@@ -30,7 +32,17 @@ local function suite(name, ...)
   allSuites[#allSuites+1] = s
 end
 
+local function assertNil(element, clue)
+  if type(element) ~= "nil" then
+    error(clue or ("Element was supposed to be nil but got: " .. tostring(element)))
+  end
+end
+
 local function assertEquals(obtained, expected, clue)
+  if type(expected) == "nil" and type(clue) == "nil" then
+    error("Expected can't be nil. Use 'assertNil' instead.")
+  end
+
   if obtained ~= expected then
     print(clue or "Obtained and expected where not equals.")
     print("Obtained: " .. tostring(obtained))
@@ -41,16 +53,34 @@ local function assertEquals(obtained, expected, clue)
 end
 
 local function test(description, effect)
-  local t = {}
-  t.description = description
-  t.effect = function()
-    print("Running test " .. description)
-    effect()
-  end
-  return t
+  return {
+    description = description,
+    effect = function()
+      print("Running test " .. description)
+      effect()
+    end
+  }
+end
+
+local function lioTest(description, effect)
+  return {
+    description = description,
+    effect = function()
+      local l = LIO.clock.sleep(0):thenRun(LIO.console.print(description)):thenRun(effect)
+      LIO.runToFuture(l)
+    end
+  }
 end
 
 local _1234 = collection.range(1, 4)
+
+suite("Meta",
+  test("Assert nil works", function()
+    assertNil(nil, "Nil was correctly identity")
+    assertNil(nil)
+
+  end)
+)
 
 suite("Collection API",
   test("Collection instances are serializable", function ()
@@ -233,13 +263,15 @@ suite("base64",
 )
 
 
+suite("LIO",
+  lioTest(
+    "Testing with a sleep",
+    LIO.clock.sleep(1):thenRun(LIO.fromFunction(function()
+      assertEquals(1, 1, "bleh")
+    end))
+  )
+)
+
+
 -- Runs all test suites
 collection.new(allSuites):foreach(function(s) s:run() end)
-
-
-print(collection.charsFromString(base64.encode("abcdz@#&é'(à")):map(
-  function(c) return (c == "=") and -1 or base64.bytes:find(c) - 1 end
-))
-
-print(base64.encode("abcdz@#&é'(à"))
-

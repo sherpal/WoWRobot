@@ -2,6 +2,7 @@ print("Welcome, puppet!")
 
 local WorldFrame = Puppet.WorldFrame
 local collection = Puppet.collection
+local LIO = Puppet.LIO
 
 local function createSquares(pixelSize, howMany)
   local squares = collection.empty:padTo(0, howMany):map(function()
@@ -42,6 +43,13 @@ function Puppet.encodeLife()
   
 end
 
+function Puppet.runLIO()
+  local sleep = LIO.clock.sleep(2)
+  local function lioPrint(value)
+    return sleep:flatMap(function() return LIO.console.print(value) end)
+  end
+  local lio = LIO.unit(3):map(function(x) return x * 2 end):flatMap(lioPrint)
 
-
-
+  LIO.runToFuture(lio)
+  LIO.runToFuture(lio)
+end

@@ -24,6 +24,18 @@ end
 
 collection.mt.__tostring = function(col) return col:toString() end
 
+function collection.mt:append(element)
+  local result = {}
+  local length = self:length()
+
+  for j = 1, length do
+    result[j] = self[j]
+  end
+  result[length + 1] = element
+
+  return collection.new(result)
+end
+
 -- Returns the length of the collection
 function collection.mt:length()
   return #self.values
@@ -104,6 +116,11 @@ function collection.mt:filter(predicate)
   end)
 end
 
+-- Returns only the element *not* satisfying the predicate
+function collection.mt:filterNot(predicate)
+  return self:filter(function(element) return not predicate(element) end)
+end
+
 -- Groups the elements in the collection by groupSize
 -- The first element of the returned collection contains the groupSize first element of
 -- this collection. The last group is truncated if need be.
@@ -127,6 +144,10 @@ function collection.mt:grouped(groupSize)
   return collection.new(groups):map(collection.new)
 end
 
+function collection.mt:isEmpty()
+  return #self.values == 0
+end
+
 function collection.mt:sum(zero)
   return self:foldLeft(zero or 0, function(left, right) return left + right end)
 end
@@ -142,6 +163,21 @@ function collection.mt:padTo(paddingElement, desiredLength)
     result[j] = self.values[j] or paddingElement
   end
   return collection.new(result)
+end
+
+function collection.mt:partition(predicate)
+  local predicateSatisfied = {}
+  local predicateNotSatisfied = {}
+
+  self:foreach(function(elem)
+    if predicate(elem) then
+      predicateSatisfied[#predicateSatisfied+1] = elem
+    else
+      predicateNotSatisfied[#predicateNotSatisfied+1] = elem
+    end
+  end)
+
+  return collection.new(predicateSatisfied), collection.new(predicateNotSatisfied)
 end
 
 -- Returns the indices of the collection (starting at 1, like lua wants it)

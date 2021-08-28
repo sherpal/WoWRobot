@@ -63,7 +63,7 @@ end
 -- Dumps the element into a JSON string, using the automatic serializer
 -- if the element is not an instance of Serializable
 function serializer.toJsonAuto(element)
-  return element.isSerializable and element:toJson() or serializer.makeJsonSerializableAuto(element):toJson()
+  return (element.isSerializable and element or serializer.makeJsonSerializableAuto(element)):toJson()
 end
 
 -- Convert the given element to a json string
