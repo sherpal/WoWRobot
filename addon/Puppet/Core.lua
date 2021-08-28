@@ -44,12 +44,11 @@ function Puppet.encodeLife()
 end
 
 function Puppet.runLIO()
-  local sleep = LIO.clock.sleep(2)
-  local function lioPrint(value)
-    return sleep:flatMap(function() return LIO.console.print(value) end)
-  end
-  local lio = LIO.unit(3):map(function(x) return x * 2 end):flatMap(lioPrint)
+  local lio = LIO.fromFunction(function()
+    return UnitPower("player", UnitPowerType("player"))
+  end)
 
-  LIO.runToFuture(lio)
-  LIO.runToFuture(lio)
+  LIO.runToFuture(lio:repeatUntil(function(power) return power < 30 end):flatMap(function(power)
+    return LIO.console.print(power)
+  end))
 end

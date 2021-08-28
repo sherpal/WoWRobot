@@ -212,7 +212,11 @@ function lio.flatMap(theLio, f)
   local flatMappedLio = lio.cons()
   function flatMappedLio:run(callback)
     theLio:run(function(a)
-      f(a):run(callback)
+      local nextLIO = f(a)
+      if type(nextLIO) == "nil" then
+        error("Function in flatMap returned nil, and not a LIO effect", 2)
+      end
+      nextLIO:run(callback)
     end)
   end
   return flatMappedLio
@@ -252,6 +256,10 @@ function lio.unit(value)
   return effect
 end
 
+----------------------------------------------------------
+--- LIO class methods ---
+-------------------------
+
 -- Executes this effect, then replaces its output with value
 function lio.mt:as(value)
   return self:map(function() return value end)
@@ -267,10 +275,26 @@ function lio.mt:map(f)
   return self:flatMap(function(a) return lio.unit(f(a)) end)
 end
 
+-- Applies this effect continually for the rest of times, where each iteration is spaced
+-- by the specified number of seconds.
+function lio.mt:repeatEvery(numberOfSeconds)
+  return self:thenWait(numberOfSeconds):repeatForever()
+end
+
 -- Applies this effect continually for the rest of times.
 function lio.mt:repeatForever()
-  -- it is required to wait 0s, otherwise a synchronous effect will produce a stack overflow
-  return self:thenWait(0):flatMap(function() return self:repeatForever() end)
+  return self:repeatUntil(function() return false end)
+end
+
+-- Applies this effect continually until the predicate is satisfied for the result
+-- When that happens, returns the result
+function lio.mt:repeatUntil(predicate)
+  return self:flatMap(function(result)
+    if predicate(result) then return lio.unit(result)
+    -- it is required to wait 0s, otherwise a synchronous effect will produce a stack overflow
+    else return self:thenWait(0):thenRun(self:repeatUntil(predicate))
+    end
+  end)
 end
 
 -- Run this effect then that effect, returning the result of that effect
@@ -278,11 +302,14 @@ function lio.mt:thenRun(that)
   return self:flatMap(function() return that end)
 end
 
+-- Run this effect then that effect, discarding the result of that effect
+function lio.mt:thenTap(that)
+  return self:flatMap(function(a) return that:as(a) end)
+end
+
 -- Applies this effect, then wait the specified time before completing.
 function lio.mt:thenWait(durationInSeconds)
-  return self:flatMap(function(a)
-    return lio.clock.sleep(durationInSeconds):as(a)
-  end)
+  return self:thenTap(lio.clock.sleep(durationInSeconds))
 end
 
 lio.clock = {
