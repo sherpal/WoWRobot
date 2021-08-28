@@ -6,6 +6,7 @@
 ## Version: v1.0
 
 Puppet.lua
+Config.lua
 Utils.lua
 Collection.lua
 Scheduler.lua

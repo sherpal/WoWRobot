@@ -262,6 +262,11 @@ suite("base64",
 
 )
 
+suite("Config",
+  test("Size of squares is posivite", function()
+    assert(Puppet.config.squaresPixelSize > 0)
+  end)
+)
 
 suite("LIO",
   lioTest(
