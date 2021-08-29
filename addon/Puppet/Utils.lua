@@ -69,6 +69,7 @@ end
 -- Convert the given element to a json string
 function serializer.toJson(element)
   -- todo: escape characters
+  if type(element) == "nil"    then return "null"                  end
   if type(element) == "string" then return "\"" .. element .. "\"" end
   if type(element) ~= "table"  then return tostring(element)       end
   if element.isSerializable    then return element:toJson()        end
@@ -123,10 +124,28 @@ function base64.decode(data)
     end))
 end
 
+-------------------------------------
+--- Number base repr ---
+------------------------
 
+local floor, insert = math.floor, table.insert
+local function baseN(n, base)
+  local b = base
+  n = floor(n)
+  local t = {}
+  repeat
+      local d = (n % b)
+      n = floor(n / b)
+      insert(t, 1, d)
+  until n == 0
+  return Puppet.collection.new(t)
+end
 
 
 -- exports
 Puppet.JsonSerializer = serializer
 Puppet.base64 = base64
 Puppet.identity = function(x) return x end
+Puppet.utils = {
+  baseN = baseN
+}
