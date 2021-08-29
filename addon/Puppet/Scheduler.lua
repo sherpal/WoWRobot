@@ -57,6 +57,7 @@ local function checkTimers(self, elapsed)
     table.remove(self.timers, self.timers[name].id)
     self.timers[name] = nil
   end
+  self.timersToRemove = {}
 
   local toRemove = {}
   for j = 1, #self.timers do
@@ -74,12 +75,12 @@ local function checkTimers(self, elapsed)
       end
       -- table.remove(self.timers, j)
       table.insert(toRemove, j)
-      if #self.timers == 0 then self:HideIfDoNothing() end
     end
   end
   for j = #toRemove, 1, -1 do
-    table.remove(self.timers, j)
+    table.remove(self.timers, toRemove[j])
   end
+  if #self.timers == 0 then self:HideIfDoNothing() end
 end
 
 
@@ -222,6 +223,12 @@ function lio.flatMap(theLio, f)
   return flatMappedLio
 end
 
+function lio.runAll(effects)
+  return effects:foldLeft(lio.unit(nil), function(left, right) 
+    return left:thenWait(0):thenRun(right)
+  end)
+end
+
 function lio.fromFunction(f)
   return lio.unit(nil):map(function() return f() end)
 end
@@ -263,6 +270,10 @@ end
 -- Executes this effect, then replaces its output with value
 function lio.mt:as(value)
   return self:map(function() return value end)
+end
+
+function lio.mt:delayed(numberOfSeconds)
+  return lio.clock.sleep(numberOfSeconds):thenRun(self)
 end
 
 -- Should I comment flatMap?
@@ -312,6 +323,14 @@ function lio.mt:thenWait(durationInSeconds)
   return self:thenTap(lio.clock.sleep(durationInSeconds))
 end
 
+-- Returns an effect executing this effect, then that effect, and returning both results in a list
+function lio.mt:zip(that)
+  return self:flatMap(function(a) that:map(function(b) return {
+    a, b,
+    left = a, right = b
+  } end) end)
+end
+
 lio.clock = {
   sleep = function(durationInSeconds)
     return lio.fromFuture(function() return future.sleep(durationInSeconds) end)
@@ -332,7 +351,7 @@ end)
 
 function mainFrame:HideIfDoNothing()
   if #self.timers == 0 and self.futures:isEmpty() then
-    self:Hide()
+    --self:Hide()
   end
 end
 
