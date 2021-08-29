@@ -1,4 +1,6 @@
 
 Puppet.config = {
-  squaresPixelSize = 4
+  squaresPixelSize = 20,
+  numberOfNumberOfBytesSquares = 2,
+  sqrtOfNumberOfDataSquares = 100
 }
