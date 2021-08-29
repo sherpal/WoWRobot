@@ -128,6 +128,14 @@ suite("Collection API",
     assertEquals(collection.empty:exists(function() return true end), false)
   end),
 
+  test("Pad left to", function ()
+    assertEquals(
+      _1234:padLeftTo(0, 6),
+      collection.new({0, 0, 1, 2, 3, 4})
+    )
+    assertEquals(_1234:padLeftTo(0, 3), _1234)
+  end),
+
   test("Sum works on range", function()
     for j = 1, 10 do
       assertEquals(
@@ -265,6 +273,17 @@ suite("base64",
 suite("Config",
   test("Size of squares is posivite", function()
     assert(Puppet.config.squaresPixelSize > 0)
+  end)
+)
+
+suite("Utils",
+  test("Transformation to base works", function()
+    local n = 10
+    local baseN = Puppet.utils.baseN
+    assertEquals(baseN(n, 2), collection.new({1, 0, 1, 0}))
+    assertEquals(baseN(n, 3), collection.new({1, 0,  1}))
+    assertEquals(baseN(n, 4), collection.new({2, 2}))
+    assertEquals(baseN(n, 5), collection.new({2, 0}))
   end)
 )
 

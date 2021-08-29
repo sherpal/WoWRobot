@@ -156,6 +156,17 @@ function collection.mt:toString()
   return self:mkString(", ")
 end
 
+-- Fills the collection with the padding element from the left, until it reaches desired length
+function collection.mt:padLeftTo(paddingElement, desiredLength)
+  local result = {}
+  local numberToFill = desiredLength - self:length()
+  if numberToFill <= 0 then return self end
+  for j = 1, desiredLength do
+    result[j] = j <= numberToFill and paddingElement or self[j - numberToFill]
+  end
+  return collection.new(result)
+end
+
 -- Fills the collection with the padding element, until it reaches desired length
 function collection.mt:padTo(paddingElement, desiredLength)
   local result = {}
