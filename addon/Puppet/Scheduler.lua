@@ -93,9 +93,6 @@ local function checkFutures(self)
     return future.completed end
   )
   mainFrame.futures = stillRunning:filterNot(function(element) return element.cancelled end)
-  if finished:length() > 0 then
-    print("Number of finished futures: " .. finished:length())
-  end
   finished:foreach(function(f)
     f.callbacks:foreach(function(callback)
       callback(f.value)
@@ -224,13 +221,13 @@ function lio.flatMap(theLio, f)
 end
 
 function lio.runAll(effects)
-  return effects:foldLeft(lio.unit(nil), function(left, right) 
+  return effects:foldLeft(lio.unit(nil), function(left, right)
     return left:thenWait(0):thenRun(right)
   end)
 end
 
 function lio.fromFunction(f)
-  return lio.unit(nil):map(function() return f() end)
+  return lio.unit(nil):map(f)
 end
 
 -- Given a theFuture: () => Future[A], creates a

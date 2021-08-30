@@ -26,14 +26,18 @@ local effect = LIO.fromFunction(function()
   local dataBytesFrameSize = Puppet.config.sqrtOfNumberOfDataSquares * pixelSize
   dataBytesFrame:SetSize(dataBytesFrameSize, dataBytesFrameSize)
 
-  local numberOfBytesSquares = collection.range(1, Puppet.config.numberOfNumberOfBytesSquares):map(function()
-    local square = CreateFrame("Button", nil, numberOfBytesFrame)
+  local createSquare = function(parentFrame)
+    local square = CreateFrame("Button", nil, parentFrame)
     square:SetSize(pixelSize, pixelSize)
     square.tex = square:CreateTexture()
     square.tex:SetAllPoints()
-    square.tex:SetColorTexture(1,0,1,1)
+    square.tex:SetColorTexture(0,0,0,1)
     return square
-  end)
+  end
+
+  local numberOfBytesSquares = collection.empty:padTo(
+    numberOfBytesFrame, Puppet.config.numberOfNumberOfBytesSquares
+  ):map(createSquare)
 
   do
     local leftSquare = numberOfBytesSquares[1]
@@ -45,7 +49,36 @@ local effect = LIO.fromFunction(function()
     end)
   end
 
-  return numberOfBytesSquares
+  local dataBytesSquares = collection.empty:padTo(
+    dataBytesFrame,
+    Puppet.config.sqrtOfNumberOfDataSquares * Puppet.config.sqrtOfNumberOfDataSquares
+  ):map(createSquare)
+
+  do
+    local leftSquare = dataBytesSquares[1]
+    leftSquare:SetPoint("TOPLEFT", dataBytesFrame, "TOPLEFT")
+
+    local squaresGrouped = dataBytesSquares:grouped(Puppet.config.sqrtOfNumberOfDataSquares)
+
+    squaresGrouped[1]:zipWithTail():foreach(function(elem)
+      local left = elem[1]
+      local right = elem[2]
+      right:SetPoint("LEFT", left, "RIGHT")
+    end)
+
+    squaresGrouped:zipWithTail():foreach(function(elem)
+      local lineAbove = elem[1]
+      local lineBelow = elem[2]
+
+      lineAbove:zip(lineBelow):foreach(function(squaresTopAndBottom)
+        local top = squaresTopAndBottom[1]
+        local bottom = squaresTopAndBottom[2]
+        bottom:SetPoint("TOP", top, "BOTTOM")
+      end)
+    end)
+  end
+
+  return {numberOfBytesSquares = numberOfBytesSquares, dataBytesSquares = dataBytesSquares}
 end)
 
 local drawNumberOfBytes = function(numberOfBytesSquares, squares)
@@ -63,26 +96,55 @@ local drawNumberOfBytes = function(numberOfBytesSquares, squares)
   end)
 end
 
-LIO.runToFuture(effect:delayed(1):flatMap(function(numberOfBytesSquares)
-    return LIO.fromFunction(function ()
-      return math.random(0, 64*64*64)
-    end):flatMap(function (n)
-      return drawNumberOfBytes(n, numberOfBytesSquares)
-    end):repeatEvery(1)
-  end))
+local drawDataBytes = function(base64Bytes, squares)
+  return LIO.fromFunction(function()
+    -- take while is an optimization
+    local numberOfNonTransparentSquares = squares:takeWhile(function (square)
+      return square.tex:GetAlpha() > 0
+    end):length()
 
-function drawing.drawState(squares, gameState)
-  local encodedData = base64.encodeToNumber(json.toJson(gameState))
+    local squaresToModify = squares:take(math.max(numberOfNonTransparentSquares, math.ceil(base64Bytes:length() / 3)))
 
-  encodedData:map(function(value) return value * 4 end):grouped(3):zip(squares):foreach(
-    function(rgbAndSquare)
-      local rgb = rgbAndSquare[1]
-      local square = rgbAndSquare[2]
+    local transparent = {0, 0, 0, 0}
+    local paddedColours = base64Bytes:map(function (x) return x * 3 end):grouped(3):padTo(
+      transparent, squaresToModify:length()
+    )
 
+    squaresToModify:zip(paddedColours):foreach(function (squareAndColour)
+      local square = squareAndColour[1]
+      local rgb    = squareAndColour[2]
       rgb[2] = rgb[2] or 0
       rgb[3] = rgb[3] or 0
+      rgb[4] = rgb[4] or 1
+
+      square.tex:SetColorTexture(rgb[1] / 256, rgb[2] / 256, rgb[3] / 256, rgb[4])
+    end)
       
-      square.tex:SetColorTexture(rgb[1] / 256, rgb[2] / 256, rgb[3] / 256, 1)
-    end
-  )
+  end)
 end
+
+local function drawState(squares, gameState)
+  return LIO.unit(base64.encodeToNumber(json.toJson(gameState))):flatMap(function(encodedData)
+    return LIO.runAll(collection.new({
+      drawNumberOfBytes(encodedData:length(), squares.numberOfBytesSquares),
+      drawDataBytes(encodedData, squares.dataBytesSquares)
+    }))
+  end)
+end
+
+-- testing
+LIO.runToFuture(effect:delayed(1):flatMap(function(squares)
+  return LIO.fromFunction(function ()
+    local mana = UnitPower("player", UnitPowerType("player"))
+
+    return json.makeJsonSerializableAuto({
+      mana = mana
+    })
+  end):flatMap(function(gameState)
+    print(gameState:toJson())
+    return drawState(squares, gameState)
+  end):repeatEvery(1)
+end))
+
+
+drawing.drawState = drawState

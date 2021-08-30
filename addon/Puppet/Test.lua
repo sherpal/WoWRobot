@@ -151,6 +151,16 @@ suite("Collection API",
     end
   end),
 
+  test("take method", function()
+    assertEquals(_1234:take(2), collection.new({1, 2}))
+    assertEquals(_1234:take(5), identity(_1234))
+  end),
+
+  test("takeWhile method", function()
+    local col = collection.new({true, true, false, true, true})
+    assertEquals(col:takeWhile(identity), col:take(2))
+  end),
+
   test("Grouped method", function()
     local elements = collection.range(1, 1000)
 

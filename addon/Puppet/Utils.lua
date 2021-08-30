@@ -102,9 +102,12 @@ function base64.encode(data)
     end)..({ '', '==', '=' })[#data%3+1])
 end
 
+-- Takes the string data and encoded as base 64 bytes, using numbers from 0 to 63
 function base64.encodeToNumber(data)
   return Puppet.collection.charsFromString(base64.encode(data)):map(function(char)
-    return char == "=" and nil or b:find(char) - 1
+    if char ~= "=" then
+      return b:find(char) - 1
+    end
   end):filter(function(elem) return elem and true or false end)
 end
 

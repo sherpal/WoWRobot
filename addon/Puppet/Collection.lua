@@ -75,12 +75,12 @@ function collection.mt:map(f)
   return collection.new(result)
 end
 
-function collection.mt:mkString(before, sperator, after)
+function collection.mt:mkString(before, seperator, after)
   if type(before) == "nil" then
     return self:mkString("")
   end
 
-  if type(sperator) == "nil" and type(after) == "nil" then
+  if type(seperator) == "nil" and type(after) == "nil" then
     return self:mkString("", before, "")
   end
 
@@ -88,7 +88,7 @@ function collection.mt:mkString(before, sperator, after)
     error("mkString takes one or three arguments, not two.")
   end
 
-  return before .. table.concat(self.values, sperator) .. after
+  return before .. table.concat(self:map(tostring).values, seperator) .. after
 end
 
 -- Maps each element of the collection via f, flattening the result
@@ -203,7 +203,30 @@ end
 function collection.mt:tail()
   return self:zipWithIndex():filter(function(elem)
     return elem[2] > 1
-  end):map(function(elem) return elem[1] end)  
+  end):map(function(elem) return elem[1] end)
+end
+
+-- take the first number elements of the list, or the entire list if its length is
+-- smaller.
+function collection.mt:take(number)
+  local actualLength = math.min(number, self:length())
+  local result = {}
+  for j = 1, actualLength do
+    result[j] = self[j]
+  end
+  return collection.new(result)
+end
+
+-- Take elements in the collection while the predicate is true
+function collection.mt:takeWhile(predicate)
+  local result = {}
+  local length = self:length()
+  for j = 1, length do
+    local elem = self[j]
+    if not predicate(elem) then break end
+    result[j] = elem
+  end
+  return collection.new(result)
 end
 
 function collection.mt:zip(that)
