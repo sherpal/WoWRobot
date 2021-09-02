@@ -84,7 +84,7 @@ end
 local base64 = {}
 
 -- character table string
-local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local b = Puppet.config.base64Bytes
 
 base64.bytes = b
 

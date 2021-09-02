@@ -89,20 +89,19 @@ end
 mainFrame.futures = Puppet.collection.empty
 
 local function checkFutures(self)
-  local finished, stillRunning = self.futures:partition(function(future) 
+  local finished, stillRunning = self.futures:partition(function(future)
     return future.completed end
   )
   mainFrame.futures = stillRunning:filterNot(function(element) return element.cancelled end)
   finished:foreach(function(f)
     f.callbacks:foreach(function(callback)
       callback(f.value)
-      f.takenCareOf = true
     end)
+    f.takenCareOf = true
   end)
   self:HideIfDoNothing()
 end
 
--- todo: think about this
 local future = {}
 scheduler.Future = future
 
@@ -186,6 +185,13 @@ local lio = {}
 lio.mt = {}
 lio.mt.__index = lio.mt
 
+--[[
+  Abstract method to be implemented by all instances of LIO effects
+  This method allows you to have access to the value that the effect will eventually produce.
+  There is no guarantee that this callback will be called synchronously (although it could sometimes).
+  
+  @param callback: A => Unit, function which will be called with the value produced by the effect.
+]]
 function lio.mt:run(callback)
   print(callback)
   error("NotImplemented")
@@ -348,7 +354,7 @@ end)
 
 function mainFrame:HideIfDoNothing()
   if #self.timers == 0 and self.futures:isEmpty() then
-    --self:Hide()
+    self:Hide()
   end
 end
 
