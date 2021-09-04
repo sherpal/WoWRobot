@@ -126,3 +126,10 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
   } yield gameState
 
 }
+
+object WOWGameStateProvider {
+  def dummy: Provider[Either[Throwable, GameState]] = new Provider[Either[Throwable, GameState]] {
+    val logger = LoggerFactory.getLogger(getClass)
+    def provide() = Right(GameState(scala.util.Random.nextInt(10)))
+  }
+}

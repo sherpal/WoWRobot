@@ -1,3 +1,3 @@
 package be.doeraene.models
 
-final case class GameState()
+final case class GameState(int: Int)
