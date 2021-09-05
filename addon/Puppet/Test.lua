@@ -303,6 +303,22 @@ suite("LIO",
     LIO.clock.sleep(1):thenRun(LIO.fromFunction(function()
       assertEquals(1, 1, "bleh")
     end))
+  ),
+
+  lioTest("Forking must parallelize stuff",
+    LIO.clock.sleep(3):as(5):fork():flatMap(function(sleepFiber)
+      return LIO.fromFunction(function()
+        assertNil(sleepFiber.result, "Fiber result was supposed to be nil at this point")
+      end):as(5):flatMap(function(x)
+        return sleepFiber:join():map(function(y)
+          return x + y
+        end)
+      end)
+    end):flatMap(function(result)
+      return LIO.fromFunction(function()
+        assertEquals(result, 10)
+      end)
+    end)
   )
 )
 

@@ -185,11 +185,48 @@ local lio = {}
 lio.mt = {}
 lio.mt.__index = lio.mt
 
+local fiber = {}
+fiber.mt = {}
+fiber.mt.__index = fiber.mt
+
+function fiber.cons(effect)
+  local theFiber = {
+    effect = effect,
+    finished = false,
+    callbacks = Puppet.collection.empty,
+    result = nil
+  }
+  setmetatable(theFiber, fiber.mt)
+  return theFiber
+end
+
+function fiber.mt:join()
+  if self.finished then return lio.unit(self.result)
+  else
+    return lio.async(function(callback) self:registerCallback(callback) end)
+  end
+end
+
+function fiber.mt:registerCallback(callback)
+  self.callbacks = self.callbacks:append(callback)
+end
+
+function fiber.mt:start()
+  lio.runToFuture(self.effect):onComplete(function(result)
+    self.finished = true
+    self.result = result
+    self.callbacks:foreach(function(callback)
+      callback(result)
+    end)
+    self.callbacks = Puppet.collection.empty
+  end)
+end
+
 --[[
   Abstract method to be implemented by all instances of LIO effects
   This method allows you to have access to the value that the effect will eventually produce.
   There is no guarantee that this callback will be called synchronously (although it could sometimes).
-  
+
   @param callback: A => Unit, function which will be called with the value produced by the effect.
 ]]
 function lio.mt:run(callback)
@@ -282,6 +319,14 @@ end
 -- Should I comment flatMap?
 function lio.mt:flatMap(f)
   return lio.flatMap(self, f)
+end
+
+function lio.mt:fork()
+  return lio.fromFunction(function()
+    local f = fiber.cons(self)
+    f:start()
+    return f
+  end)
 end
 
 -- Should I comment map?
