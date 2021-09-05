@@ -17,11 +17,18 @@ import io.circe.syntax.*
 import scalatags.Text.all.*
 import scalatags.Text
 
+import java.awt.{MouseInfo, Robot}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.*
 import scala.io.StdIn
 
-@main def runServer(): Unit = {
+@main def printMousePos(): Unit = {
+  Thread.sleep(3000)
+  val mousePosition = MouseInfo.getPointerInfo.getLocation
+  println((mousePosition.x, mousePosition.y))
+}
+
+@main def runServer(topLeftX: Int, topLeftY: Int): Unit = {
 
   given ToEntityMarshaller[Text.TypedTag[String]] =
     summon[ToEntityMarshaller[String]]
@@ -38,10 +45,11 @@ import scala.io.StdIn
       )
       .collect { case (Some(t), true) => t } // collecting actual changes
 
-  val wowGameStateProvider = WOWGameStateProvider.dummy //((216, 60))
+  println(s"Top left square is ${(topLeftX, topLeftY)}")
+  val wowGameStateProvider = WOWGameStateProvider((topLeftX, topLeftY))
 
   implicit val actorSystem: ActorSystem[_] = ActorSystem(Behaviors.ignore[Any], "Server")
-  implicit def ec: ExecutionContext = actorSystem.executionContext
+  given ExecutionContext = actorSystem.executionContext
 
   val gameStateDistributor = actorSystem.systemActorOf(
     GameStateDistributor(),
@@ -97,10 +105,7 @@ import scala.io.StdIn
           handleWebSocketMessages(
             Flow.fromSinkAndSource(
               Flow[Message].to(Sink.ignore),
-              Source
-                .fromPublisher(publisher)
-                .map(_.asJson.noSpaces)
-                .map(TextMessage(_))
+              Source.fromPublisher(publisher).map(_.asJson.noSpaces).map(TextMessage(_))
             )
           )
         } ~
