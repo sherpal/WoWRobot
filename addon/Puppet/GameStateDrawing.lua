@@ -10,7 +10,7 @@ local collection = Puppet.collection
 local WorldFrame = Puppet.WorldFrame
 local pixelSize = Puppet.config.squaresPixelSize
 
-local effect = LIO.fromFunction(function()
+local prepareDrawingEffect = LIO.fromFunction(function()
   print("Preparing GameStateDrawing")
   local mainFrame = CreateFrame("Frame")
   mainFrame:SetPoint("TOPLEFT", WorldFrame, "TOPLEFT")
@@ -124,7 +124,7 @@ local drawDataBytes = function(base64Bytes, squares)
       transparent, squaresToModify:length()
     )
 
-    print(transformBase64BytesIntoSquareBytes(base64Bytes):grouped(3):map(function(x) return x:mkString("(", ", ", ")") end))
+    -- print(transformBase64BytesIntoSquareBytes(base64Bytes):grouped(3):map(function(x) return x:mkString("(", ", ", ")") end))
 
     squaresToModify:zip(paddedColours):foreach(function (squareAndColour)
       local square = squareAndColour[1]
@@ -148,18 +148,5 @@ local function drawState(squares, gameState)
   end)
 end
 
--- testing
-LIO.runToFuture(effect:delayed(1):flatMap(function(squares)
-  return LIO.fromFunction(function ()
-    local mana = UnitPower("player", UnitPowerType("player"))
-
-    return json.makeJsonSerializableAuto({
-      mana = mana
-    })
-  end):flatMap(function(gameState)
-    return drawState(squares, gameState)
-  end):repeatEvery(5)
-end))
-
-
 drawing.drawState = drawState
+drawing.prepareDrawingEffect = prepareDrawingEffect

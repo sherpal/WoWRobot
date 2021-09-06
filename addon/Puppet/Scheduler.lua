@@ -373,7 +373,7 @@ end
 
 -- Returns an effect executing this effect, then that effect, and returning both results in a list
 function lio.mt:zip(that)
-  return self:flatMap(function(a) that:map(function(b) return {
+  return self:flatMap(function(a) return that:map(function(b) return {
     a, b,
     left = a, right = b
   } end) end)

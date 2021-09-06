@@ -52,6 +52,14 @@ local function assertEquals(obtained, expected, clue)
   end
 end
 
+local function assertEqualsM(expected, clue)
+  return function(obtained)
+    return LIO.fromFunction(function()
+      assertEquals(obtained, expected, clue)
+    end)
+  end
+end
+
 local function test(description, effect)
   return {
     description = description,
@@ -308,16 +316,20 @@ suite("LIO",
   lioTest("Forking must parallelize stuff",
     LIO.clock.sleep(3):as(5):fork():flatMap(function(sleepFiber)
       return LIO.fromFunction(function()
-        assertNil(sleepFiber.result, "Fiber result was supposed to be nil at this point")
-      end):as(5):flatMap(function(x)
-        return sleepFiber:join():map(function(y)
-          return x + y
-        end)
-      end)
-    end):flatMap(function(result)
-      return LIO.fromFunction(function()
-        assertEquals(result, 10)
-      end)
+        assertNil(sleepFiber.result, "Fiber result was supposed to be nil at this point.")
+      end):as(5):zip(sleepFiber:join())
+    end):map(function(result) return result.left + result.right end):flatMap(
+      assertEqualsM(10, "Sum of sleep and fiber must be 10")
+    )
+  ),
+
+  lioTest("Forking a finished fiber returns result",
+    LIO.clock.sleep(3):as(5):fork():flatMap(function(sleepFiber)
+      return sleepFiber:join():flatMap(
+        assertEqualsM(5, "Joined result must now be 5 once")
+      ):thenRun(sleepFiber:join()):flatMap(
+        assertEqualsM(5, "Joined result was not returned twice")
+      )
     end)
   )
 )
