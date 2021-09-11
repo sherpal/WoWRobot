@@ -268,7 +268,7 @@ function lio.foreach(effects)
     return left:zip(right):map(function (zipped)
       return zipped.left:append(zipped.right)
     end)
-  end):map(function(reversedResults) return reversedResults:reverse() end)
+  end)
 end
 
 function lio.foreachPar(effects)

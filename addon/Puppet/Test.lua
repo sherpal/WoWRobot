@@ -12,6 +12,28 @@ end
 
 local allSuites = {}
 
+local function lioSuite(name, ...)
+  local tests = collection.new({...})
+
+  local s = {
+    tests = tests,
+    name = name
+  }
+
+  function s:run()
+    print("Test suite " .. self.name)
+
+    local allTestsEffect = self.tests:map(function(test)
+      return LIO.console.print(test.description):thenRun(test.effect):delayed(0)
+    end):foldLeft(LIO.unit(), function(acc, next)
+      return acc:thenRun(next)
+    end)
+    LIO.runToFuture(allTestsEffect)
+  end
+
+  allSuites[#allSuites+1] = s
+end
+
 local function suite(name, ...)
 
   local tests = {}
@@ -60,6 +82,16 @@ local function assertEqualsM(expected, clue)
   end
 end
 
+-- Creates a flat mappable effect which checks that a zipped result contains the same on
+-- the right and on the left.
+local function assertZippedResultEqualsM(clue)
+  return function(zipped)
+    return LIO.fromFunction(function()
+      assertEquals(zipped.left, zipped.right, clue)
+    end)
+  end
+end
+
 local function test(description, effect)
   return {
     description = description,
@@ -73,10 +105,7 @@ end
 local function lioTest(description, effect)
   return {
     description = description,
-    effect = function()
-      local l = LIO.clock.sleep(0):thenRun(LIO.console.print(description)):thenRun(effect)
-      LIO.runToFuture(l)
-    end
+    effect = effect
   }
 end
 
@@ -120,6 +149,11 @@ suite("Collection API",
     assertEquals(_1234:mkString(", "), "1, 2, 3, 4")
     assertEquals(_1234:mkString(), "1234")
     assertEquals(_1234:mkString("[", ",", "]"), "[1,2,3,4]")
+  end),
+
+  test("Reverse method", function()
+    assertEquals(_1234:reverse(), collection.new({4, 3, 2, 1}), "Reverse of 1234 should be 4321")
+    assertEquals(_1234:reverse():reverse(), _1234, "Reverse squared is the identity")
   end),
 
   test("Filter on even numbers return only even numbers", function()
@@ -305,7 +339,7 @@ suite("Utils",
   end)
 )
 
-suite("LIO",
+lioSuite("LIO",
   lioTest(
     "Testing with a sleep",
     LIO.clock.sleep(1):thenRun(LIO.fromFunction(function()
@@ -317,6 +351,12 @@ suite("LIO",
     LIO.foreach(collection.range(1, 10):map(LIO.unit)):flatMap(
       assertEqualsM(collection.range(1, 10))
     )
+  ),
+
+  lioTest("LIO foreachPar does the same functionaly as LIO foreach",
+    LIO.foreachPar(collection.range(1, 10):map(LIO.unit)):zip(
+      LIO.foreach(collection.range(1, 10):map(LIO.unit))
+    ):flatMap(assertZippedResultEqualsM("foreach and foreachPar did not do the same."))
   ),
 
   lioTest("Zip works",
