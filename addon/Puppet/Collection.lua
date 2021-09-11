@@ -200,6 +200,15 @@ function collection.mt:indices()
   return collection.new(result)
 end
 
+function collection.mt:reverse()
+  local result = {}
+  local length = self:length()
+  for j = 1, length do
+    result[j] = self[length + 1 - j]
+  end
+  return collection.new(result)
+end
+
 function collection.mt:tail()
   return self:zipWithIndex():filter(function(elem)
     return elem[2] > 1

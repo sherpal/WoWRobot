@@ -313,6 +313,30 @@ suite("LIO",
     end))
   ),
 
+  lioTest("LIO foreach works on list of unit stuff",
+    LIO.foreach(collection.range(1, 10):map(LIO.unit)):flatMap(
+      assertEqualsM(collection.range(1, 10))
+    )
+  ),
+
+  lioTest("Zip works",
+    LIO.unit(3):zip(LIO.unit(4)):flatMap(function(zipped)
+      return LIO.fromFunction(function()
+          assertEquals(zipped.left, 3)
+          assertEquals(zipped.right, 4)
+      end)
+    end)
+  ),
+
+  lioTest("ZipPar at least returns like zip",
+    LIO.clock.sleep(0.5):as(3):zipPar(LIO.unit(4)):flatMap(function(zipped)
+      return LIO.fromFunction(function()
+          assertEquals(zipped.left, 3)
+          assertEquals(zipped.right, 4)
+      end)
+    end)
+  ),
+
   lioTest("Forking must parallelize stuff",
     LIO.clock.sleep(3):as(5):fork():flatMap(function(sleepFiber)
       return LIO.fromFunction(function()

@@ -142,6 +142,7 @@ end
 local function drawState(squares, gameState)
   return LIO.unit(base64.encodeToNumber(json.toJson(gameState))):flatMap(function(encodedData)
     return LIO.runAll(collection.new({
+      LIO.console.print(json.toJson(gameState)),
       drawNumberOfBytes(encodedData:length(), squares.numberOfBytesSquares),
       drawDataBytes(encodedData, squares.dataBytesSquares)
     }))

@@ -263,6 +263,22 @@ function lio.flatMap(theLio, f)
   return flatMappedLio
 end
 
+function lio.foreach(effects)
+  return effects:foldLeft(lio.unit(Puppet.collection.empty), function(left, right)
+    return left:zip(right):map(function (zipped)
+      return zipped.left:append(zipped.right)
+    end)
+  end):map(function(reversedResults) return reversedResults:reverse() end)
+end
+
+function lio.foreachPar(effects)
+  return lio.foreach(effects:map(function(effect) return effect:fork() end)):flatMap(
+    function (allFibers)
+      return lio.foreach(allFibers:map(function(theFiber) return theFiber:join() end))
+    end
+  )
+end
+
 function lio.runAll(effects)
   return effects:foldLeft(lio.unit(nil), function(left, right)
     return left:thenWait(0):thenRun(right)
@@ -377,6 +393,14 @@ function lio.mt:zip(that)
     a, b,
     left = a, right = b
   } end) end)
+end
+
+function lio.mt:zipPar(that)
+  return self:fork():flatMap(function(thisFiber)
+    return that:flatMap(function(thatResult)
+      return thisFiber:join():zip(lio.unit(thatResult))
+    end)
+  end)
 end
 
 lio.clock = {
