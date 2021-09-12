@@ -112,7 +112,7 @@ local drawDataBytes = function(base64Bytes, squares)
   return LIO.fromFunction(function()
     -- take while is an optimization
     local numberOfNonTransparentSquares = squares:takeWhile(function (square)
-      return square.tex:GetAlpha() > 0
+      return square:IsShown()
     end):length()
 
     local squaresToModify = squares:take(math.max(
@@ -132,6 +132,12 @@ local drawDataBytes = function(base64Bytes, squares)
       rgb[2] = rgb[2] or 0
       rgb[3] = rgb[3] or 0
       rgb[4] = rgb[4] or 1
+
+      if rgb[4] > 0 then
+        square:Show()
+      else
+        square:Hide()
+      end
 
       square.tex:SetColorTexture(rgb[1] / 256, rgb[2] / 256, rgb[3] / 256, rgb[4])
     end)

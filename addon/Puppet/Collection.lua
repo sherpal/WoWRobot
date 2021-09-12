@@ -36,6 +36,21 @@ function collection.mt:append(element)
   return collection.new(result)
 end
 
+function collection.mt:concat(that)
+  local result = {}
+  local thisLength = self:length()
+  for j = 1, thisLength do
+    result[j] = self[j]
+  end
+
+  local thatLength = that:length()
+  for j = 1, thatLength do
+    result[j + thisLength] = that[j]
+  end
+
+  return collection.new(result)
+end
+
 -- Returns the length of the collection
 function collection.mt:length()
   return #self.values

@@ -17,6 +17,7 @@ import io.circe.generic.auto.*
 import java.awt.{Color, Rectangle, Robot, Toolkit}
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import io.circe.{Json, JsonFloat}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.Try
@@ -65,10 +66,11 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
   }
 
   def readWOWBytes(numberOfBytes: Long) = {
-    val bytesPositions = (0 until sqrtOfNumberOfDataSquares * numberOfSquaresPerByte)
-      .map(_ * (squaresPixelSize))
-      .map { xOffset =>
-        (topLeft._1 + xOffset, topLeft._2 + squaresPixelSize)
+    val rowSize = sqrtOfNumberOfDataSquares * numberOfSquaresPerByte
+    val bytesPositions = (0 until (rowSize * sqrtOfNumberOfDataSquares))
+      .map(squareIndex => ((squareIndex % rowSize) * squaresPixelSize, (squareIndex / rowSize) * squaresPixelSize))
+      .map { (xOffset, yOffset) =>
+        (topLeft._1 + xOffset, topLeft._2 + yOffset + squaresPixelSize)
       }
       .toList
 
@@ -128,8 +130,9 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
 }
 
 object WOWGameStateProvider {
+
   def dummy: Provider[Either[Throwable, GameState]] = new Provider[Either[Throwable, GameState]] {
     val logger = LoggerFactory.getLogger(getClass)
-    def provide() = Right(GameState(scala.util.Random.nextInt(10)))
+    def provide() = Right(Json.fromInt(scala.util.Random.nextInt(10)))
   }
 }

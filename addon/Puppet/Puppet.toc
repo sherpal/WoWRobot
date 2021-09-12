@@ -12,4 +12,5 @@ Collection.lua
 Scheduler.lua
 GameStateDrawing.lua
 Core.lua
+LowLevelPaladin.lua
 Test.lua

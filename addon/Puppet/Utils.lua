@@ -73,7 +73,16 @@ function serializer.toJson(element)
   if type(element) == "string" then return "\"" .. element .. "\"" end
   if type(element) ~= "table"  then return tostring(element)       end
   if element.isSerializable    then return element:toJson()        end
-  error("Element is not serializable: " .. tostring(element))
+
+  local fields = {}
+  for k, v in pairs(element) do
+    if type(v) ~= "function" then fields[#fields+1] = k end
+  end
+  fields = Puppet.collection.new(fields)
+
+  return fields:map(function (key)
+    return "\"" .. key .. "\":" .. serializer.toJson(element[key])
+  end):mkString("{", ",", "}")
 end
 
 
