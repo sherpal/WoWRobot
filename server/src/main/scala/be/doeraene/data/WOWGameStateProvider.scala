@@ -53,10 +53,10 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
     val screenRect = new Rectangle(Toolkit.getDefaultToolkit.getScreenSize)
     val capture = robot.createScreenCapture(screenRect)
 
-    println(
-      numberOfBytesPositions
-        .map(position => new Color(capture.getRGB(position._1, position._2)))
-    )
+//    println(
+//      numberOfBytesPositions
+//        .map(position => new Color(capture.getRGB(position._1, position._2)))
+//    )
 
     decodeByteGroupings(
       numberOfBytesPositions
@@ -87,21 +87,21 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
     //      Thread.sleep(2000)
     //    }
 
-    println(
-      bytesPositions
-        .take(numberOfSquaresToTake)
-        .map(position => new Color(capture.getRGB(position._1, position._2)))
-    )
+//    println(
+//      bytesPositions
+//        .take(numberOfSquaresToTake)
+//        .map(position => new Color(capture.getRGB(position._1, position._2)))
+//    )
 
-    println(
-      decodeByteGroupings(
-        bytesPositions
-          .take(numberOfSquaresToTake)
-          .map(position => new Color(capture.getRGB(position._1, position._2)))
-          .flatMap(color => List(color.getRed, color.getGreen, color.getBlue))
-          .take(totalNumberOfBytes)
-      )
-    )
+//    println(
+//      decodeByteGroupings(
+//        bytesPositions
+//          .take(numberOfSquaresToTake)
+//          .map(position => new Color(capture.getRGB(position._1, position._2)))
+//          .flatMap(color => List(color.getRed, color.getGreen, color.getBlue))
+//          .take(totalNumberOfBytes)
+//      )
+//    )
 
     val base64String = decodeByteGroupings(
       bytesPositions
@@ -115,7 +115,7 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
       .mkString
 
     val decodedString = java.util.Base64.getDecoder.decode(base64String).map(_.toChar).mkString
-    println(decodedString)
+    //println(decodedString)
     println(io.circe.parser.decode[io.circe.Json](decodedString).map(_.spaces2))
 
     decodedString

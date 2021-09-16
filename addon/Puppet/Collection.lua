@@ -206,6 +206,20 @@ function collection.mt:partition(predicate)
   return collection.new(predicateSatisfied), collection.new(predicateNotSatisfied)
 end
 
+function collection.mt:splitAt(index)
+  local beforeSplit = {}
+  local afterSplit = {}
+  local selfLength = self:length()
+  local actualSplit = math.min(index, selfLength)
+  for j = 1, actualSplit do
+    beforeSplit[j] = self[j]
+  end
+  for j = actualSplit + 1, selfLength do
+    afterSplit[j - actualSplit] = self[j]
+  end
+  return collection.new(beforeSplit), collection.new(afterSplit)
+end
+
 -- Returns the indices of the collection (starting at 1, like lua wants it)
 function collection.mt:indices()
   local result = {}

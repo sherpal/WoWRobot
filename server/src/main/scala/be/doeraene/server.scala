@@ -57,7 +57,7 @@ import scala.io.StdIn
   )
 
   val gameStatePipeline = wowGameStateProvider
-    .sourceLogErrorAndContinue(every = 3000.millis)
+    .sourceLogErrorAndContinue(every = 200.millis)
     .distinct
     .to(GameStateDistributor.sink(gameStateDistributor))
 

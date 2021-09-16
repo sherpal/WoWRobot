@@ -48,7 +48,9 @@ lazy val server = project
       "com.typesafe.akka" % "akka-http_2.13" % AkkaHttpVersion,
       "com.typesafe" % "config" % "1.4.1",
       "ch.qos.logback" % "logback-classic" % "1.2.5",
-      "com.lihaoyi" % "scalatags_2.13" % "0.9.4"
+      "com.lihaoyi" % "scalatags_2.13" % "0.9.4",
+      "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0-M5",
+      "com.github.oshi" % "oshi-core" % "5.8.2"
     )
   )
   .dependsOn(shared.jvm)
