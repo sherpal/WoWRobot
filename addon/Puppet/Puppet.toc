@@ -13,4 +13,5 @@ Scheduler.lua
 GameStateDrawing.lua
 Core.lua
 LowLevelPaladin.lua
+LowLevelChamheal.lua
 Test.lua

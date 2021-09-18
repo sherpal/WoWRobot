@@ -2,10 +2,11 @@ package be.doeraene.data
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import be.doeraene.models.GameState
-import be.doeraene.ias.paladin.ret.lowlevel._
+import be.doeraene.models.{FullGameStateDTO, GameState}
+import be.doeraene.ias.paladin.ret.lowlevel.*
+import zio.ZIO
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object PlayerActor {
 
@@ -37,7 +38,10 @@ object PlayerActor {
         context.scheduleOnce(1000.millis, context.self, GameLoop)
         try {
           be.doeraene.ZIOConfig.theRuntime.unsafeRun(
-            takeAction(fromGameState(currentGameState))
+            for {
+              fullGameState <- ZIO.fromEither(FullGameStateDTO.fullGameStateDecoder.decodeJson(currentGameState))
+              _ <- takeAction(fullGameState)
+            } yield ()
           )
         } catch {
           case t: Throwable => t.printStackTrace()
