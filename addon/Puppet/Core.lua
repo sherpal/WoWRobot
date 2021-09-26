@@ -121,6 +121,16 @@ Puppet.Scheduler.setInterval(0, 0.25, function()
   end)
 end, "healths-updater")
 
+Puppet.Scheduler.setInterval(30, 30, function()
+  Puppet.Core.changeGameState(function(gs)
+    local now = GetTime()
+    gs.usedAbilities:filter(function(info)
+      -- keeping only spell that where cast less than 10 minutes ago.
+      return now - info[3] < 600
+    end)
+  end)
+end)
+
 Puppet.Core = {
   registerEventCallback = registerEventCallback,
   changeGameState = function(update)
