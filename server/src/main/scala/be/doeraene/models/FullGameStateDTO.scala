@@ -2,6 +2,7 @@ package be.doeraene.models
 
 import be.doeraene.data.communication.arrayreader.ArrayReader
 import be.doeraene.models.buffs.PlayerBuffInfo
+import be.doeraene.models.entities.{PlayerInfo, TotemInfo}
 import be.doeraene.models.spells.CastSpellSucceeded
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -14,10 +15,17 @@ object FullGameStateDTO {
     Decoder[String].map(identity[Primitive])
   ).reduce(_.or(_))
 
+  private case class RawTotem(index: Int, name: String, haveTotem: Boolean, startTime: Int, duration: Int):
+    def toTotemInfo: TotemInfo =
+      if haveTotem then TotemInfo.AliveTotemInfo(index, name, startTime, duration)
+      else TotemInfo.AbsentTotemInfo(index)
+
   private case class GameStateHere(
       usedAbilities: Vector[Vector[Primitive]],
       inCombat: Boolean,
-      playerBuffs: Vector[Vector[Primitive]]
+      playerBuffs: Vector[Vector[Primitive]],
+      playersInfo: Vector[Vector[Primitive]],
+      totems: Option[Vector[Vector[Primitive]]]
   ) {
     def translateVectorOfInfos[T](info: Vector[Vector[Primitive]])(using reader: ArrayReader[Vector[T]]) =
       reader.extractInfoIgnoreCount(info.length +: info.flatten, 0)
@@ -25,7 +33,11 @@ object FullGameStateDTO {
     def toFullGameState = for {
       decodedUsedAbilities <- translateVectorOfInfos[CastSpellSucceeded](usedAbilities)
       decodedPlayerBuffs <- translateVectorOfInfos[PlayerBuffInfo](playerBuffs)
-    } yield FullGameState(decodedUsedAbilities, inCombat, decodedPlayerBuffs)
+      decodedPlayersInfo <- translateVectorOfInfos[PlayerInfo](playersInfo)
+      decodedTotemInfo <- totems.fold(Right(Option.empty[Vector[TotemInfo]]))(
+        translateVectorOfInfos[RawTotem](_).map(_.map(_.toTotemInfo)).map(Some(_))
+      )
+    } yield FullGameState(decodedUsedAbilities, inCombat, decodedPlayerBuffs, decodedPlayersInfo, decodedTotemInfo)
   }
 
   private val gameStateHereDecoder: Decoder[GameStateHere] = deriveDecoder

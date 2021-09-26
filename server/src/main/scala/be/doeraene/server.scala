@@ -59,7 +59,7 @@ import scala.io.StdIn
   val gameStatePipeline = wowGameStateProvider
     .sourceLogErrorAndContinue(every = 200.millis)
     .distinct
-    .to(GameStateDistributor.sink(gameStateDistributor))
+    .toMat(GameStateDistributor.sink(gameStateDistributor))(Keep.right)
 
   val playerActor = actorSystem.systemActorOf(
     Behaviors.setup[PlayerActor.Command] { context =>
@@ -114,9 +114,7 @@ import scala.io.StdIn
       }
     )
 
-  Future {
-    gameStatePipeline.run()
-  }
+  gameStatePipeline.run()
 
   println(s"Server online at http://$host:$port/")
   println("Press RETURN to stop...")

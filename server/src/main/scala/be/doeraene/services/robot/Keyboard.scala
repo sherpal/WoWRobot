@@ -78,19 +78,34 @@ object Keyboard {
     KeyEvent.VK_NUMPAD9
   )
 
+  val fKeys = Vector(
+    KeyEvent.VK_F1,
+    KeyEvent.VK_F2,
+    KeyEvent.VK_F3,
+    KeyEvent.VK_F4,
+    KeyEvent.VK_F5,
+    KeyEvent.VK_F6,
+    KeyEvent.VK_F7,
+    KeyEvent.VK_F8,
+    KeyEvent.VK_F9,
+    KeyEvent.VK_F10,
+    KeyEvent.VK_F11,
+    KeyEvent.VK_F12
+  )
+
   val backslash: KeyCode = KeyEvent.VK_BACK_SLASH
 
-  val ctrl: ModifierKey  = ModifierKey(KeyEvent.VK_CONTROL)
+  val ctrl: ModifierKey = ModifierKey(KeyEvent.VK_CONTROL)
   val shift: ModifierKey = ModifierKey(KeyEvent.VK_SHIFT)
-  val alt: ModifierKey   = ModifierKey(KeyEvent.VK_ALT)
+  val alt: ModifierKey = ModifierKey(KeyEvent.VK_ALT)
 
   val enter: KeyCode = KeyEvent.VK_ENTER
 
-  val space: KeyCode      = KeyEvent.VK_SPACE
+  val space: KeyCode = KeyEvent.VK_SPACE
   val underscore: KeyCode = KeyEvent.VK_UNDERSCORE
-  val dot: KeyCode        = KeyEvent.VK_DECIMAL
-  val colon: KeyCode      = KeyEvent.VK_COLON
-  val semiColon: KeyCode  = KeyEvent.VK_SEMICOLON
-  val dash: KeyCode       = KeyEvent.VK_MINUS
+  val dot: KeyCode = KeyEvent.VK_DECIMAL
+  val colon: KeyCode = KeyEvent.VK_COLON
+  val semiColon: KeyCode = KeyEvent.VK_SEMICOLON
+  val dash: KeyCode = KeyEvent.VK_MINUS
 
 }
