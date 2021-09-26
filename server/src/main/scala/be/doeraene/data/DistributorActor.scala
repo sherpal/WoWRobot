@@ -1,9 +1,11 @@
 package be.doeraene.data
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+
+import scala.concurrent.Future
 
 trait DistributorActor {
 
@@ -53,15 +55,15 @@ trait DistributorActor {
           subscription.send(currentElement)
           behavior(subscription +: subscriptions, currentElement)
         case Unsubscribe(ref) =>
-          behaviorWaitingForFirstElement(subscriptions.filterNot(_.replyTo == ref))
+          behavior(subscriptions.filterNot(_.replyTo == ref), currentElement)
         case Terminate(maybeThrowable) =>
           maybeThrowable.foreach(context.log.error("Closing because of upstream error", _))
           Behaviors.stopped
       }
     }
 
-  def sink(ref: ActorRef[Command]): Sink[Element, NotUsed] =
-    Flow[Element].map(Update(_)).to(Sink.foreach(ref ! _))
+  def sink(ref: ActorRef[Command]): Sink[Element, Future[Done]] =
+    Flow[Element].map(Update(_)).toMat(Sink.foreach(ref ! _))(Keep.right)
 
 }
 
