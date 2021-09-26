@@ -1,6 +1,6 @@
 name := "WoWRobot"
 
-version := "0.1"
+version := "0.2"
 
 val theScalaVersion = "3.0.1"
 
