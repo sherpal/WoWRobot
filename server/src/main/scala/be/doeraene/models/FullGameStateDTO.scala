@@ -15,7 +15,7 @@ object FullGameStateDTO {
     Decoder[String].map(identity[Primitive])
   ).reduce(_.or(_))
 
-  private case class RawTotem(index: Int, name: String, haveTotem: Boolean, startTime: Int, duration: Int):
+  private case class RawTotem(index: Int, haveTotem: Boolean, name: String, startTime: Int, duration: Int):
     def toTotemInfo: TotemInfo =
       if haveTotem then TotemInfo.AliveTotemInfo(index, name, startTime, duration)
       else TotemInfo.AbsentTotemInfo(index)

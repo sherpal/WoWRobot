@@ -15,8 +15,8 @@ final case class FullGameState(
 ):
   def playerIndexByName: Map[String, Int] = playersInfo.map(_.name).zipWithIndex.toMap
 
-  def presentTotems: Vector[TotemInfo.AliveTotemInfo] = maybeTotemsInfo.fold(Vector())(_.collect {
+  lazy val presentTotems: Vector[TotemInfo.AliveTotemInfo] = maybeTotemsInfo.toVector.flatten.collect {
     case info: TotemInfo.AliveTotemInfo => info
-  })
+  }
 
   def hasTotemWithIndex(index: Int): Boolean = presentTotems.exists(_.index == index)

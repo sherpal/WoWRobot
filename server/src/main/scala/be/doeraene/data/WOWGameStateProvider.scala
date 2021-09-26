@@ -116,7 +116,7 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
 
     val decodedString = java.util.Base64.getDecoder.decode(base64String).map(_.toChar).mkString
     //println(decodedString)
-    println(io.circe.parser.decode[io.circe.Json](decodedString).map(_.spaces2))
+    println(io.circe.parser.decode[io.circe.Json](decodedString).map(_.noSpaces))
 
     decodedString
   }
