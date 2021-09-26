@@ -8,7 +8,8 @@ local drawing = Puppet.GameStateDrawing
 local gameState = {
   inCombat = false,
   usedAbilities = collection.empty,
-  playerBuffs = collection.empty
+  playerBuffs = collection.empty,
+  playersInfo = collection.empty
 }
 
 local accessGameState = LIO.fromFunction(function() return gameState end)
@@ -45,7 +46,7 @@ eventFrame.callbacks = {
       local start, duration, enabled = GetSpellCooldown(spellID)
       currentGS.usedAbilities = currentGS.usedAbilities:filter(function(info)
         return info[4] ~= spellID
-      end):append(collection.new({unitTarget, castGUID, GetTime()}):concat(
+      end):append(collection.new({unitTarget or "none", castGUID, GetTime()}):concat(
         collection.new({
           spellID, name, castTime or 0, minRange or 0, maxRange or 0,
           start, duration, enabled == 1
@@ -86,7 +87,7 @@ local function buildPlayerBuffs()
       break
     end
     result[buffIndex] = collection.new({
-      name, count, debuffType or "", duration or -1, expirationTime or -1, source, spellId
+      name, count, debuffType or "", duration or -1, expirationTime or -1, source or "none", spellId
     })
 
     buffIndex = buffIndex + 1
@@ -104,9 +105,9 @@ Puppet.Scheduler.setInterval(0, 0.25, function()
       end)
     )
 
-    gs.health = units:map(function (unit)
-      return collection.new({UnitHealth(unit), UnitHealthMax(unit)})
-    end):filter(function(info) return info[2] > 0 end)
+    gs.playersInfo = units:map(function (unit)
+      return collection.new({UnitName(unit), UnitHealth(unit), UnitHealthMax(unit)})
+    end):filter(function(info) return info[3] > 0 end)
 
     gs.usedAbilities = gs.usedAbilities:map(function(info)
       local staticInfo = info:take(info:length() - 3)
