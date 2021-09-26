@@ -24,6 +24,7 @@ object AutoArrayReader extends AutoDerivation[AutoArrayReader] {
 
   given AutoArrayReader[String] = of[String]
   given AutoArrayReader[Int] = of[Int]
+  given AutoArrayReader[Long] = of[Long]
   given AutoArrayReader[Double] = new AutoArrayReader[Double] {
     def extractInfo(rawInfo: Vector[Any], startingIndex: Int): Either[Throwable, (Double, Int)] =
       of[Double].extractInfo(rawInfo, startingIndex) match {
