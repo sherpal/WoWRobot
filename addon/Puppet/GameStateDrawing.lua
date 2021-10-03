@@ -17,8 +17,12 @@ local prepareDrawingEffect = LIO.fromFunction(function()
   local mainFrameSize = (Puppet.config.sqrtOfNumberOfDataSquares * Puppet.config.numberOfSquaresPerByte + 1) * pixelSize
   mainFrame:SetSize(mainFrameSize, mainFrameSize)
 
+  local calibratingLineFrame = CreateFrame("Frame", "CalibratingFrame", mainFrame)
+  calibratingLineFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT")
+  calibratingLineFrame:SetSize(3 * pixelSize, pixelSize)
+
   local numberOfBytesFrame = CreateFrame("Frame", "NumberOfBytes", mainFrame)
-  numberOfBytesFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT")
+  numberOfBytesFrame:SetPoint("TOPLEFT", calibratingLineFrame, "BOTTOMLEFT")
   numberOfBytesFrame:SetSize(mainFrameSize, pixelSize)
 
   local dataBytesFrame = CreateFrame("Frame", "DataBytes", mainFrame)
@@ -33,6 +37,21 @@ local prepareDrawingEffect = LIO.fromFunction(function()
     square.tex:SetAllPoints()
     square.tex:SetColorTexture(0,0,0,1)
     return square
+  end
+
+  local framesForCallibration = collection.range(1, 3):map(function(index)
+    local isWhite = index == 2 -- only middle square is white, others are black
+    local square = createSquare(calibratingLineFrame)
+    if isWhite then
+      square.tex:SetColorTexture(255, 255, 255, 1)
+    end
+    return square
+  end)
+
+  do
+    framesForCallibration[1]:SetPoint("TOPLEFT", calibratingLineFrame, "TOPLEFT")
+    framesForCallibration[2]:SetPoint("LEFT", framesForCallibration[1], "RIGHT")
+    framesForCallibration[3]:SetPoint("LEFT", framesForCallibration[2], "RIGHT")
   end
 
   local numberOfBytesSquares = collection.empty:padTo(

@@ -8,7 +8,6 @@ import be.doeraene.EntryPoint.{
   numberOfNumberOfBytesSquares,
   numberOfSquaresPerByte,
   sqrtOfNumberOfDataSquares,
-  squaresPixelSize,
   topLeft
 }
 import be.doeraene.models.GameState
@@ -20,6 +19,7 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import io.circe.{Json, JsonFloat}
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.awt.image.BufferedImage
 import scala.util.Try
 
 final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Throwable, GameState]] {
@@ -41,17 +41,25 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
       )
       .toList
 
-  def readWOWNumberOfBytes(): Long = {
-    val numberOfBytesPositions = (0 until numberOfNumberOfBytesSquares * numberOfSquaresPerByte)
-      .map(_ * squaresPixelSize)
-      .map { xOffset =>
-        (topLeft._1 + xOffset, topLeft._2)
-      }
+  def inferSquarePixelSize(capture: BufferedImage): Int = {
+    val line = (0 until 100)
+      .map(xOffset => (topLeft._1 + xOffset, topLeft._2))
+      .map { case (x, y) => new Color(capture.getRGB(x, y)) }
+      .map(colour => List(colour.getRed, colour.getGreen, colour.getBlue).sum / 3)
       .toList
 
-    val robot = new Robot
-    val screenRect = new Rectangle(Toolkit.getDefaultToolkit.getScreenSize)
-    val capture = robot.createScreenCapture(screenRect)
+    val startWhiteSquare = line.indexWhere(_ > 128) // finding first light pixel
+    val endLastSquare = line.indexWhere(_ < 128, startWhiteSquare)
+
+    endLastSquare - startWhiteSquare
+  }
+
+  def readWOWNumberOfBytes(capture: BufferedImage, squaresPixelSize: Int): Long = {
+    val y = topLeft._2 + squaresPixelSize
+    val numberOfBytesPositions = (0 until numberOfNumberOfBytesSquares * numberOfSquaresPerByte)
+      .map(_ * squaresPixelSize)
+      .map(xOffset => (topLeft._1 + xOffset, y))
+      .toList
 
 //    println(
 //      numberOfBytesPositions
@@ -65,22 +73,18 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
     ).reverse.zipWithIndex.map((byte, exp) => byte * (64 pow exp)).sum
   }
 
-  def readWOWBytes(numberOfBytes: Long) = {
+  def readWOWBytes(numberOfBytes: Long, squaresPixelSize: Int, capture: BufferedImage) = {
     val rowSize = sqrtOfNumberOfDataSquares * numberOfSquaresPerByte
     val bytesPositions = (0 until (rowSize * sqrtOfNumberOfDataSquares))
       .map(squareIndex => ((squareIndex % rowSize) * squaresPixelSize, (squareIndex / rowSize) * squaresPixelSize))
       .map { (xOffset, yOffset) =>
-        (topLeft._1 + xOffset, topLeft._2 + yOffset + squaresPixelSize)
+        (topLeft._1 + xOffset, topLeft._2 + yOffset + 2 * squaresPixelSize)
       }
       .toList
 
     val totalNumberOfBytes = (numberOfBytes * numberOfSquaresPerByte).toInt
     val numberOfSquaresToTake =
       (totalNumberOfBytes / 3 + (if totalNumberOfBytes % 3 > 0 then 1L else 0L)).toInt
-
-    val robot = new Robot
-    val screenRect = new Rectangle(Toolkit.getDefaultToolkit.getScreenSize)
-    val capture = robot.createScreenCapture(screenRect)
 
     //    bytesPositions.take(numberOfSquaresToTake).foreach { (x, y) =>
     //      robot.mouseMove(x, y)
@@ -122,8 +126,14 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
   }
 
   def provide(): Either[Throwable, GameState] = for {
-    numberOfBytes <- Try(readWOWNumberOfBytes()).toEither
-    decodedString <- Try(readWOWBytes(numberOfBytes)).toEither
+    capture <- Right {
+      val robot = new Robot
+      val screenRect = new Rectangle(Toolkit.getDefaultToolkit.getScreenSize)
+      robot.createScreenCapture(screenRect)
+    }
+    squarePixelSize <- Try(inferSquarePixelSize(capture)).toEither
+    numberOfBytes <- Try(readWOWNumberOfBytes(capture, squarePixelSize)).toEither
+    decodedString <- Try(readWOWBytes(numberOfBytes, squarePixelSize, capture)).toEither
     gameState <- io.circe.parser.decode[GameState](decodedString)
   } yield gameState
 
