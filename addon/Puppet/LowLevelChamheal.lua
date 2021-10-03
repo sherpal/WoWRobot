@@ -21,6 +21,6 @@ Puppet.Scheduler.setInterval(0, 0.25, function()
       return collection.new({
         totemIndex, haveTotem, totemName or "", startTime or 0, duration or 0
       })
-    end)    
+    end)
   end)
 end)

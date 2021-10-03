@@ -106,6 +106,10 @@ function collection.mt:mkString(before, seperator, after)
   return before .. table.concat(self:map(tostring).values, seperator) .. after
 end
 
+function collection.mt:contains(element)
+  return self:exists(function(elem) return element == elem end)
+end
+
 -- Maps each element of the collection via f, flattening the result
 -- f must return a collection
 function collection.mt:flatMap(f)

@@ -1,11 +1,12 @@
 package be.doeraene.models
 
-import be.doeraene.data.communication.arrayreader.ArrayReader
+import be.doeraene.data.communication.arrayreader.{ArrayReader, AutoArrayReader}
 import be.doeraene.models.buffs.PlayerBuffInfo
 import be.doeraene.models.entities.{PlayerInfo, TotemInfo}
 import be.doeraene.models.spells.CastSpellSucceeded
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
+import be.doeraene.models.PowerType
 
 object FullGameStateDTO {
   private implicit val anyDecoder: Decoder[Primitive] = List[Decoder[Primitive]](

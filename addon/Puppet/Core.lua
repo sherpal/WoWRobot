@@ -19,11 +19,11 @@ local prepareInOneSec = drawing.prepareDrawingEffect:delayed(1)
 local function drawGameState(squares)
   return accessGameState:flatMap(function(gs)
     return drawing.drawState(squares, gs)
-  end):repeatEvery(0.3):fork()
+  end):repeatEvery(0.1):fork()
 end
 
 local updateGameState = LIO.fromFunction(function ()
-  --gameState = {result = math.random(10)}
+  --print(gameState.playersInfo:mkString(", "))
 end):repeatEvery(1)
 
 local effect = prepareInOneSec:flatMap(drawGameState):thenRun(updateGameState)
@@ -38,10 +38,24 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SENT")
+
+local castByPlayer = collection.new({})
 
 eventFrame.callbacks = {
+  UNIT_SPELLCAST_SENT = function(unit, _, castGUID)
+    if unit == "player" then
+      castByPlayer = castByPlayer:append(castGUID)
+    end
+  end,
   UNIT_SPELLCAST_SUCCEEDED = function(unitTarget, castGUID, spellID)
     Puppet.Core.changeGameState(function(currentGS)
+      if castByPlayer:contains(castGUID) then
+        castByPlayer = castByPlayer:filterNot(function(elem) return elem == castGUID end)
+      else
+        -- this was not cast by the player, cancel recording
+        return nil
+      end
       local name, _, _, castTime, minRange, maxRange, _ = GetSpellInfo(spellID)
       local start, duration, enabled = GetSpellCooldown(spellID)
       currentGS.usedAbilities = currentGS.usedAbilities:filter(function(info)
@@ -96,7 +110,7 @@ local function buildPlayerBuffs()
   return collection.new(result)
 end
 
-Puppet.Scheduler.setInterval(0, 0.25, function()
+local function mainGameStateUpdate()
   Puppet.Core.changeGameState(function(gs)
 
     local units = collection.single("player"):concat(
@@ -105,8 +119,16 @@ Puppet.Scheduler.setInterval(0, 0.25, function()
       end)
     )
 
+    
     gs.playersInfo = units:map(function (unit)
-      return collection.new({UnitName(unit), UnitHealth(unit), UnitHealthMax(unit)})
+      local powerType, powerTypeString = UnitPowerType(unit)
+      local power = UnitPower(unit, powerType)
+      local maxPower = UnitPowerMax(unit, powerType)
+      return collection.new({
+        UnitName(unit),
+        UnitHealth(unit), UnitHealthMax(unit),
+        powerTypeString, power, maxPower
+      })
     end):filter(function(info) return info[3] > 0 end)
 
     gs.usedAbilities = gs.usedAbilities:map(function(info)
@@ -119,7 +141,9 @@ Puppet.Scheduler.setInterval(0, 0.25, function()
     gs.playerBuffs = buildPlayerBuffs()
 
   end)
-end, "healths-updater")
+end
+
+Puppet.Scheduler.setInterval(0, 0.09, mainGameStateUpdate, "healths-updater")
 
 Puppet.Scheduler.setInterval(30, 30, function()
   Puppet.Core.changeGameState(function(gs)
@@ -136,5 +160,6 @@ Puppet.Core = {
   changeGameState = function(update)
     -- updates the game state with the given function update: GameState => GameState
     update(gameState)
-  end
+  end,
+  mainGameStateUpdate = mainGameStateUpdate
 }

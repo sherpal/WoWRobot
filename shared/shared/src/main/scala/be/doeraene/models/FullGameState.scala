@@ -19,4 +19,6 @@ final case class FullGameState(
     case info: TotemInfo.AliveTotemInfo => info
   }
 
+  def isDrinking: Boolean = playerBuffs.exists(_.name == "Boisson")
+
   def hasTotemWithIndex(index: Int): Boolean = presentTotems.exists(_.index == index)
