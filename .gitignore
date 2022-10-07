@@ -11,3 +11,5 @@ target
 project/metals.sbt
 invites
 .bsp
+addon/.metals
+addon/.vscode

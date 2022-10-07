@@ -144,11 +144,11 @@ final class WOWGameStateProvider(topLeft: (Int, Int)) extends Provider[Either[Th
   }
 
   def provide(): Either[Throwable, GameState] = for {
-    capture <- Right {
+    capture <- Try {
       val robot = new Robot
       val screenRect = new Rectangle(Toolkit.getDefaultToolkit.getScreenSize)
       robot.createScreenCapture(screenRect)
-    }
+    }.toEither
     squarePixelSize <- Try(inferSquarePixelSize(capture)).toEither
     numberOfBytes <- Try(readWOWNumberOfBytes(capture, squarePixelSize)).toEither
     decodedString <- Try(readWOWBytes(numberOfBytes, squarePixelSize, capture)).toEither
